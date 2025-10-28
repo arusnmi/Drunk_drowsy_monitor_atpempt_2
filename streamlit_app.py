@@ -22,7 +22,7 @@ EYES_CLOSED_SECONDS = 3.0   # eyes closed continuously for this -> alert
 ALERT_COOLDOWN = 5.0        # seconds before same alert can re-trigger
 
 # sound file (put an alarm file in project, or change path)
-DEFAULT_ALARM = "alarm.wav"  # supply this in project folder or change to a valid .wav
+DEFAULT_ALARM = "loud_alarm_extended.mp3"  # supply this in project folder or change to a valid .wav
 
 # ---------------------------
 # Initialize mediapipe and pygame (once)
