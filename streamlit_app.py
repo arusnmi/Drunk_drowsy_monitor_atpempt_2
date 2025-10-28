@@ -1,14 +1,22 @@
 # streamlit_app.py
 # Real-time driver monitoring (EAR, MAR, HTR) with audible + visual alerts using Streamlit + Mediapipe + OpenCV + pygame
 
+# streamlit_app.py
 import streamlit as st
 import cv2
 import numpy as np
-import mediapipe as mp
+
+# Try Mediapipe; fallback for Python 3.13
+try:
+    import mediapipe as mp
+except ImportError:
+    import mediapipe_silicon as mp
+
 import time
 import threading
 import os
 import pygame
+
 
 # ---------------------------
 # SETTINGS / THRESHOLDS (from you)
