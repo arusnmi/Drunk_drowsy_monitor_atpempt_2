@@ -35,11 +35,19 @@ face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False,
                                   min_tracking_confidence=0.5)
 
 # initialize pygame mixer for non-blocking sound
-pygame.mixer.init()
-if os.path.exists(DEFAULT_ALARM):
-    alarm_sound = pygame.mixer.Sound(DEFAULT_ALARM)
-else:
+# initialize pygame mixer for non-blocking sound (safe for headless/cloud)
+try:
+    pygame.mixer.init()
+    if os.path.exists(DEFAULT_ALARM):
+        alarm_sound = pygame.mixer.Sound(DEFAULT_ALARM)
+    else:
+        alarm_sound = None
+    AUDIO_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ Audio unavailable: {e}")
+    AUDIO_AVAILABLE = False
     alarm_sound = None
+
 
 # ---------------------------
 # Utility functions
