@@ -11,18 +11,18 @@ import os
 import pygame
 
 # ---------------------------
-# SETTINGS / THRESHOLDS (from you)
+# SETTINGS / THRESHOLDS (from you)  <-- UPDATED to your fixed thresholds
 # ---------------------------
-EAR_THRESHOLD = 0.3759546116199386
-MAR_THRESHOLD = 0.1890688838015005
-HTR_THRESHOLD = 0.013294882123557058
+EAR_THRESHOLD = 0.15
+MAR_THRESHOLD = 0.6
+HTR_THRESHOLD = 0.5
 
 # Consecutive-seconds rules
 EYES_CLOSED_SECONDS = 3.0   # eyes closed continuously for this -> alert
 ALERT_COOLDOWN = 5.0        # seconds before same alert can re-trigger
 
 # sound file (put an alarm file in project, or change path)
-DEFAULT_ALARM = "loud_alarm_extended.mp3"  # supply this in project folder or change to a valid .wav
+DEFAULT_ALARM = "alarm-106447.mp3"  # supply this in project folder or change to a valid .wav
 
 # ---------------------------
 # Initialize mediapipe and pygame (once)
@@ -34,7 +34,6 @@ face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False,
                                   min_detection_confidence=0.5,
                                   min_tracking_confidence=0.5)
 
-# initialize pygame mixer for non-blocking sound
 # initialize pygame mixer for non-blocking sound (safe for headless/cloud)
 try:
     pygame.mixer.init()
@@ -99,17 +98,35 @@ def compute_metrics_from_landmarks(landmarks, w, h):
     except Exception:
         mar = None
 
-    # HTR with cheek points (234, 454)
+# HTR (head turn ratio — yaw left/right)
     try:
-        left_face = pts[234]
-        right_face = pts[454]
-        dx = abs(left_face[0] - right_face[0])
-        dy = abs(left_face[1] - right_face[1])
-        htr = dy / (dx + 1e-6)
+        left_cheek = pts[234]
+        right_cheek = pts[454]
+        nose_tip = pts[1]
+        face_center_x = (left_cheek[0] + right_cheek[0]) / 2
+        face_width = abs(right_cheek[0] - left_cheek[0])
+        htr = abs(nose_tip[0] - face_center_x) / (face_width + 1e-6)
     except Exception:
         htr = None
 
+
     return ear, mar, htr, pts
+
+# ---------------------------
+# NEW: classification helper using fixed thresholds
+# ---------------------------
+def classify_driver_state(ear, mar, htr):
+    ear_alert = ear is not None and ear <= EAR_THRESHOLD
+    mar_alert = mar is not None and mar >= MAR_THRESHOLD
+    htr_alert = htr is not None and htr >= HTR_THRESHOLD
+
+    # Only HTR -> distracted. If EAR or MAR triggered -> drowsy.
+    if htr_alert and not (ear_alert or mar_alert):
+        return "Distracted"
+    elif ear_alert or mar_alert:
+        return "Drowsy"
+    else:
+        return "Alert"
 
 # ---------------------------
 # Streamlit UI layout
@@ -253,16 +270,24 @@ def monitor_loop():
                 unsafe = True
                 unsafe_reasons.append("Head tilt")
 
+            # New: classify state using fixed thresholds
+            state = classify_driver_state(ear, mar, htr)
+
             # Visual warnings
             if unsafe:
                 # draw red border
                 cv2.rectangle(frame_display, (0, 0), (frame_display.shape[1]-1, frame_display.shape[0]-1), (0, 0, 255), 8)
                 reason_str = ", ".join(unsafe_reasons)
                 cv2.putText(frame_display, f"ALERT: {reason_str}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
-                status_text.markdown(f"<h2 style='color:red'>DANGEROUS — {reason_str}</h2>", unsafe_allow_html=True)
-                big_alert.markdown(f"<div style='background-color:#ff4d4d;padding:10px;border-radius:6px'><h2 style='color:white'>DANGER: {reason_str}</h2></div>", unsafe_allow_html=True)
+                status_text.markdown(f"<h2 style='color:red'>DANGEROUS — {state}: {reason_str}</h2>", unsafe_allow_html=True)
+                big_alert.markdown(f"<div style='background-color:#ff4d4d;padding:10px;border-radius:6px'><h2 style='color:white'>DANGER: {state}: {reason_str}</h2></div>", unsafe_allow_html=True)
             else:
-                status_text.markdown("<h2 style='color:green'>Status: ALERT</h2>", unsafe_allow_html=True)
+                if state == "Alert":
+                    status_text.markdown("<h2 style='color:green'>Status: ALERT</h2>", unsafe_allow_html=True)
+                elif state == "Distracted":
+                    status_text.markdown("<h2 style='color:orange'>Status: DISTRACTED</h2>", unsafe_allow_html=True)
+                else:
+                    status_text.markdown("<h2 style='color:yellow'>Status: DROWSY</h2>", unsafe_allow_html=True)
                 big_alert.empty()
 
             # overlay small metrics panel on frame
