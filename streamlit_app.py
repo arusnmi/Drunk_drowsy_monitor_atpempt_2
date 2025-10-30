@@ -13,7 +13,7 @@ import pygame
 # ---------------------------
 # SETTINGS / THRESHOLDS (from you)  <-- UPDATED to your fixed thresholds
 # ---------------------------
-EAR_THRESHOLD = 0.15
+EAR_THRESHOLD = 0.2
 MAR_THRESHOLD = 0.6
 HTR_THRESHOLD = 0.5
 
