@@ -132,7 +132,7 @@ def classify_driver_state(ear, mar, htr):
 # Streamlit UI layout
 # ---------------------------
 st.set_page_config(page_title="Driver Monitor", layout="wide")
-st.title("Driver Monitoring Dashboard — EAR + MAR + HTR")
+st.title("Driver Monitoring Dashboard")
 st.markdown("Real-time detection of drowsiness (eyes), yawning (mouth) and head tilt (distraction).")
 
 # Left: video & status; Right: controls & logs
@@ -147,9 +147,9 @@ with col2:
     stop_btn = st.button("Stop")
     st.markdown("---")
     st.subheader("Thresholds (current)")
-    st.write(f"EAR ≤ **{EAR_THRESHOLD:.3f}** → closed")
-    st.write(f"MAR ≥ **{MAR_THRESHOLD:.3f}** → yawning")
-    st.write(f"HTR ≥ **{HTR_THRESHOLD:.3f}** → head tilt")
+    st.write(f"Eye aspect ratio ≤ **{EAR_THRESHOLD:.3f}** → closed")
+    st.write(f"Mouth aspect ratio ≥ **{MAR_THRESHOLD:.3f}** → yawning")
+    st.write(f"Head tilt ratio ≥ **{HTR_THRESHOLD:.3f}** → head tilt")
     st.markdown("---")
     st.subheader("Event counters (session)")
     eyes_closed_count = st.empty()
