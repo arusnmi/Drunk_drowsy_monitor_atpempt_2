@@ -210,7 +210,7 @@ def monitor_loop():
                 break
 
             # resize for speed
-            small = cv2.resize(frame, (640, int(640 * frame.shape[0] / frame.shape[1])))
+            small = cv2.resize(frame, (320, int(320* frame.shape[0] / frame.shape[1])))
 
             rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
             results = face_mesh.process(rgb)
