@@ -257,7 +257,10 @@ if st.session_state.running:
                 process_frame(frame, time.time())
         # 🔁 Refresh automatically every 1s for live streaming effect
         time.sleep(1)
-        st.experimental_rerun()
+        try:
+            st.rerun()
+        except AttributeError:
+            st.experimental_rerun()
 
 else:
     st.info("Press **Start Monitoring** to begin (allow camera access).")
