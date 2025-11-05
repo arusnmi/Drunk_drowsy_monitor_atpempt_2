@@ -1,5 +1,5 @@
 # streamlit_app.py
-# Streamlit driver monitoring app — live camera only, processes every frame, robust alarm playback
+# Streamlit driver monitoring app — live camera only, processes every frame, robust alarm playback per detection type
 
 import streamlit as st
 import cv2
@@ -15,12 +15,12 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 # ---------------------------
 # SETTINGS / THRESHOLDS
 # ---------------------------
-EAR_THRESHOLD = 0.1       # 👈 changed from 0.2 to 0.1
-MAR_THRESHOLD = 0.6
-HTR_THRESHOLD = 0.5
+EAR_THRESHOLD = 0.1       # Drowsiness (eye aspect ratio)
+MAR_THRESHOLD = 0.6       # Yawning
+HTR_THRESHOLD = 0.5       # Head tilt
 EYES_CLOSED_SECONDS = 3.0
-ALERT_COOLDOWN = 5.0
-DEFAULT_ALARM = "alarm-106447.mp3"  # uploaded alarm file
+ALERT_COOLDOWN = 5.0      # seconds before next same-type alert
+DEFAULT_ALARM = "alarm-106447.mp3"
 
 # ---------------------------
 # AUDIO INIT (async-safe)
@@ -28,7 +28,7 @@ DEFAULT_ALARM = "alarm-106447.mp3"  # uploaded alarm file
 ALARM_QUEUE = queue.Queue()
 
 def alarm_worker():
-    """Dedicated background worker to handle alarm playback safely."""
+    """Background thread to handle audio playback safely."""
     try:
         pygame.mixer.init()
         if os.path.exists(DEFAULT_ALARM):
@@ -43,15 +43,15 @@ def alarm_worker():
             _ = ALARM_QUEUE.get()
             if sound:
                 sound.play()
-            time.sleep(1)  # short gap to avoid overlapping alarms
+            time.sleep(1)  # prevent overlapping playback
         except Exception:
             pass
 
-# Start alarm playback thread
+# Start background alarm thread
 threading.Thread(target=alarm_worker, daemon=True).start()
 
 def play_alarm_nonblocking():
-    """Add a playback event to the alarm queue."""
+    """Enqueue an alarm playback event."""
     try:
         ALARM_QUEUE.put_nowait(True)
     except queue.Full:
@@ -123,7 +123,7 @@ def classify_driver_state(ear, mar, htr):
 
 
 # ---------------------------
-# VIDEO TRANSFORMER (WebRTC)
+# VIDEO TRANSFORMER
 # ---------------------------
 mp_face_mesh = mp.solutions.face_mesh
 
@@ -140,7 +140,11 @@ class FaceTransformer(VideoTransformerBase):
 
         # runtime state
         self.closed_start = None
-        self.last_alert_time = 0.0
+        self.last_alert_time = {
+            "eyes": 0.0,
+            "yawn": 0.0,
+            "tilt": 0.0,
+        }
         self.eyes_closed_events = 0
         self.yawns = 0
         self.tilts = 0
@@ -149,9 +153,8 @@ class FaceTransformer(VideoTransformerBase):
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
 
-        # Downscale for faster processing
+        # Downscale for speed
         small = cv2.resize(img, (320, int(320 * img.shape[0] / img.shape[1])))
-
         rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb)
         frame_display = small.copy()
@@ -171,30 +174,30 @@ class FaceTransformer(VideoTransformerBase):
             if self.closed_start is None:
                 self.closed_start = now
             if now - self.closed_start >= EYES_CLOSED_SECONDS:
-                if now - self.last_alert_time >= ALERT_COOLDOWN:
+                if now - self.last_alert_time["eyes"] >= ALERT_COOLDOWN:
                     self.eyes_closed_events += 1
                     self.total_alerts += 1
-                    self.last_alert_time = now
-                    play_alarm_nonblocking()  # 🔊 async-safe alarm trigger
+                    self.last_alert_time["eyes"] = now
+                    play_alarm_nonblocking()
                 unsafe = True
         else:
             self.closed_start = None
 
         # Yawning
         if mar is not None and mar >= MAR_THRESHOLD:
-            if now - self.last_alert_time >= ALERT_COOLDOWN:
+            if now - self.last_alert_time["yawn"] >= ALERT_COOLDOWN:
                 self.yawns += 1
                 self.total_alerts += 1
-                self.last_alert_time = now
+                self.last_alert_time["yawn"] = now
                 play_alarm_nonblocking()
             unsafe = True
 
         # Head tilt
         if htr is not None and htr >= HTR_THRESHOLD:
-            if now - self.last_alert_time >= ALERT_COOLDOWN:
+            if now - self.last_alert_time["tilt"] >= ALERT_COOLDOWN:
                 self.tilts += 1
                 self.total_alerts += 1
-                self.last_alert_time = now
+                self.last_alert_time["tilt"] = now
                 play_alarm_nonblocking()
             unsafe = True
 
