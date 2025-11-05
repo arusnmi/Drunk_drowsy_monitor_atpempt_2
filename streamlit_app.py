@@ -1,5 +1,5 @@
 # streamlit_app.py
-# Streamlit driver monitoring app — live camera only, warning-free, plays alarm automatically on detection
+# Streamlit driver monitoring app — live camera only, processes every frame, robust alarm playback
 
 import streamlit as st
 import cv2
@@ -9,44 +9,53 @@ import time
 import threading
 import os
 import pygame
-import warnings
+import queue
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
-
-# ---------------------------
-# SUPPRESS LIBRARY WARNINGS
-# ---------------------------
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
 # ---------------------------
 # SETTINGS / THRESHOLDS
 # ---------------------------
-EAR_THRESHOLD = 0.1       # 👈 Stricter drowsiness detection
+EAR_THRESHOLD = 0.1       # 👈 changed from 0.2 to 0.1
 MAR_THRESHOLD = 0.6
 HTR_THRESHOLD = 0.5
 EYES_CLOSED_SECONDS = 3.0
 ALERT_COOLDOWN = 5.0
-DEFAULT_ALARM = "alarm-106447.mp3"  # uploaded alarm sound file
+DEFAULT_ALARM = "alarm-106447.mp3"  # uploaded alarm file
 
 # ---------------------------
-# AUDIO INIT
+# AUDIO INIT (async-safe)
 # ---------------------------
-try:
-    pygame.mixer.init()
-    if os.path.exists(DEFAULT_ALARM):
-        alarm_sound = pygame.mixer.Sound(DEFAULT_ALARM)
-    else:
-        alarm_sound = None
-except Exception:
-    alarm_sound = None
+ALARM_QUEUE = queue.Queue()
 
+def alarm_worker():
+    """Dedicated background worker to handle alarm playback safely."""
+    try:
+        pygame.mixer.init()
+        if os.path.exists(DEFAULT_ALARM):
+            sound = pygame.mixer.Sound(DEFAULT_ALARM)
+        else:
+            sound = None
+    except Exception:
+        sound = None
 
-def play_alarm_nonblocking():
-    """Play alarm sound in a separate thread."""
-    if alarm_sound:
+    while True:
         try:
-            threading.Thread(target=alarm_sound.play, daemon=True).start()
+            _ = ALARM_QUEUE.get()
+            if sound:
+                sound.play()
+            time.sleep(1)  # short gap to avoid overlapping alarms
         except Exception:
             pass
+
+# Start alarm playback thread
+threading.Thread(target=alarm_worker, daemon=True).start()
+
+def play_alarm_nonblocking():
+    """Add a playback event to the alarm queue."""
+    try:
+        ALARM_QUEUE.put_nowait(True)
+    except queue.Full:
+        pass
 
 
 # ---------------------------
@@ -114,12 +123,12 @@ def classify_driver_state(ear, mar, htr):
 
 
 # ---------------------------
-# VIDEO PROCESSOR (WebRTC)
+# VIDEO TRANSFORMER (WebRTC)
 # ---------------------------
 mp_face_mesh = mp.solutions.face_mesh
 
 
-class FaceProcessor(VideoTransformerBase):
+class FaceTransformer(VideoTransformerBase):
     def __init__(self):
         self.face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=False,
@@ -128,6 +137,8 @@ class FaceProcessor(VideoTransformerBase):
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
         )
+
+        # runtime state
         self.closed_start = None
         self.last_alert_time = 0.0
         self.eyes_closed_events = 0
@@ -135,10 +146,12 @@ class FaceProcessor(VideoTransformerBase):
         self.tilts = 0
         self.total_alerts = 0
 
-    def recv(self, frame):
-        """Process each frame in real time (replaces deprecated transform())."""
+    def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
+
+        # Downscale for faster processing
         small = cv2.resize(img, (320, int(320 * img.shape[0] / img.shape[1])))
+
         rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb)
         frame_display = small.copy()
@@ -162,7 +175,7 @@ class FaceProcessor(VideoTransformerBase):
                     self.eyes_closed_events += 1
                     self.total_alerts += 1
                     self.last_alert_time = now
-                    play_alarm_nonblocking()
+                    play_alarm_nonblocking()  # 🔊 async-safe alarm trigger
                 unsafe = True
         else:
             self.closed_start = None
@@ -185,13 +198,13 @@ class FaceProcessor(VideoTransformerBase):
                 play_alarm_nonblocking()
             unsafe = True
 
-        # Display info
+        # Classification & overlay
         state = classify_driver_state(ear, mar, htr)
         color = (0, 0, 255) if unsafe else (0, 255, 0)
+
         cv2.putText(frame_display, f"State: {state}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-        cv2.putText(frame_display,
-                    f"EAR:{ear if ear else 0:.2f} MAR:{mar if mar else 0:.2f} HTR:{htr if htr else 0:.2f}",
+        cv2.putText(frame_display, f"EAR:{ear if ear else 0:.2f} MAR:{mar if mar else 0:.2f} HTR:{htr if htr else 0:.2f}",
                     (10, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         counter_txt = f"E:{self.eyes_closed_events} Y:{self.yawns} T:{self.tilts} A:{self.total_alerts}"
         cv2.putText(frame_display, counter_txt, (10, frame_display.shape[0] - 10),
@@ -228,18 +241,18 @@ if stop_btn:
 if st.session_state.running:
     ctx = webrtc_streamer(
         key="driver-monitor",
-        video_processor_factory=FaceProcessor,  # ✅ new API
+        video_transformer_factory=FaceTransformer,
         media_stream_constraints={"video": True, "audio": False},
-        async_processing=True,  # ✅ replaces async_transform
+        async_transform=True,
     )
 
-    if ctx and ctx.video_processor:
-        processor = ctx.video_processor
+    if ctx and ctx.video_transformer:
+        transformer = ctx.video_transformer
         st.sidebar.markdown("### Live Counters")
-        st.sidebar.text(f"Eyes Closed: {processor.eyes_closed_events}")
-        st.sidebar.text(f"Yawns: {processor.yawns}")
-        st.sidebar.text(f"Tilts: {processor.tilts}")
-        st.sidebar.text(f"Alerts: {processor.total_alerts}")
+        st.sidebar.text(f"Eyes Closed: {transformer.eyes_closed_events}")
+        st.sidebar.text(f"Yawns: {transformer.yawns}")
+        st.sidebar.text(f"Tilts: {transformer.tilts}")
+        st.sidebar.text(f"Alerts: {transformer.total_alerts}")
     else:
         st.info("Starting camera... please allow access in browser.")
 else:
