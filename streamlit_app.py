@@ -1,5 +1,5 @@
 # streamlit_app.py
-# Streamlit driver monitoring app using streamlit-webrtc for live camera streaming only (no video upload, every frame processed)
+# Streamlit driver monitoring app — live camera only, processes every frame, auto-plays alarm on detection
 
 import streamlit as st
 import cv2
@@ -14,15 +14,15 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 # ---------------------------
 # SETTINGS / THRESHOLDS
 # ---------------------------
-EAR_THRESHOLD = 0.2
+EAR_THRESHOLD = 0.1       # 👈 changed from 0.2 to 0.1 for stricter drowsiness detection
 MAR_THRESHOLD = 0.6
 HTR_THRESHOLD = 0.5
 EYES_CLOSED_SECONDS = 3.0
 ALERT_COOLDOWN = 5.0
-DEFAULT_ALARM = "alarm-106447.mp3"  # optional local sound file
+DEFAULT_ALARM = "alarm-106447.mp3"  # your uploaded alarm sound
 
 # ---------------------------
-# AUDIO INIT (optional)
+# AUDIO INIT
 # ---------------------------
 try:
     pygame.mixer.init()
@@ -35,6 +35,7 @@ except Exception:
 
 
 def play_alarm_nonblocking():
+    """Play the alarm sound in a separate thread so it doesn’t block frame processing."""
     if alarm_sound:
         try:
             threading.Thread(target=alarm_sound.play, daemon=True).start()
@@ -113,9 +114,7 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 class FaceTransformer(VideoTransformerBase):
-    def __init__(self, play_audio=False):
-        self.play_audio = play_audio
-
+    def __init__(self):
         self.face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
@@ -152,7 +151,7 @@ class FaceTransformer(VideoTransformerBase):
         now = time.time()
         unsafe = False
 
-        # Eyes closed
+        # Eyes closed (drowsiness)
         if ear is not None and ear <= EAR_THRESHOLD:
             if self.closed_start is None:
                 self.closed_start = now
@@ -161,8 +160,7 @@ class FaceTransformer(VideoTransformerBase):
                     self.eyes_closed_events += 1
                     self.total_alerts += 1
                     self.last_alert_time = now
-                    if self.play_audio:
-                        play_alarm_nonblocking()
+                    play_alarm_nonblocking()  # 🔊 play sound immediately
                 unsafe = True
         else:
             self.closed_start = None
@@ -173,8 +171,7 @@ class FaceTransformer(VideoTransformerBase):
                 self.yawns += 1
                 self.total_alerts += 1
                 self.last_alert_time = now
-                if self.play_audio:
-                    play_alarm_nonblocking()
+                play_alarm_nonblocking()  # 🔊 play sound
             unsafe = True
 
         # Head tilt
@@ -183,15 +180,13 @@ class FaceTransformer(VideoTransformerBase):
                 self.tilts += 1
                 self.total_alerts += 1
                 self.last_alert_time = now
-                if self.play_audio:
-                    play_alarm_nonblocking()
+                play_alarm_nonblocking()  # 🔊 play sound
             unsafe = True
 
-        # Label classification
+        # Classification & overlay
         state = classify_driver_state(ear, mar, htr)
         color = (0, 0, 255) if unsafe else (0, 255, 0)
 
-        # Draw info overlay
         cv2.putText(frame_display, f"State: {state}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
         cv2.putText(frame_display, f"EAR:{ear if ear else 0:.2f} MAR:{mar if mar else 0:.2f} HTR:{htr if htr else 0:.2f}",
@@ -212,7 +207,6 @@ st.title("🚗 Driver Monitoring — Live Camera Only")
 col1, col2 = st.columns([2, 1])
 with col2:
     st.header("🎛 Controls")
-    play_audio = st.checkbox("Play server alarm (pygame)", value=False)
     start_btn = st.button("▶️ Start Monitoring")
     stop_btn = st.button("⏹ Stop")
 
@@ -232,7 +226,7 @@ if stop_btn:
 if st.session_state.running:
     ctx = webrtc_streamer(
         key="driver-monitor",
-        video_transformer_factory=lambda: FaceTransformer(play_audio=play_audio),
+        video_transformer_factory=FaceTransformer,
         media_stream_constraints={"video": True, "audio": False},
         async_transform=True,
     )
