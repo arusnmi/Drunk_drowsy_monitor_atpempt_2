@@ -1,6 +1,5 @@
 # streamlit_app.py
 # Streamlit driver monitoring app using streamlit-webrtc for real live camera streaming
-# + video upload fallback. Optimized to process every Nth frame.
 
 import streamlit as st
 import cv2
@@ -116,10 +115,8 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 class FaceTransformer(VideoTransformerBase):
-    def __init__(self, process_every=10, play_audio=False):
-        self.process_every = int(process_every)
+    def __init__(self, play_audio=False):
         self.play_audio = play_audio
-        self.counter = 0
 
         self.face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=False,
@@ -139,13 +136,9 @@ class FaceTransformer(VideoTransformerBase):
 
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
-        self.counter += 1
 
         # Downscale for speed
         small = cv2.resize(img, (320, int(320 * img.shape[0] / img.shape[1])))
-
-        if self.counter % self.process_every != 0:
-            return cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
 
         rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb)
@@ -226,7 +219,6 @@ col1, col2 = st.columns([2, 1])
 with col2:
     st.header("🎛 Controls")
     source_option = st.radio("Source", ("WebRTC Live Camera", "Upload Video File"))
-    process_every = st.slider("Process every Nth frame", 1, 20, 10, 1)
     play_audio = st.checkbox("Play server alarm (pygame)", value=False)
     start_btn = st.button("▶️ Start Monitoring")
     stop_btn = st.button("⏹ Stop")
@@ -248,7 +240,7 @@ if st.session_state.running:
     if source_option == "WebRTC Live Camera":
         ctx = webrtc_streamer(
             key="driver-monitor",
-            video_transformer_factory=lambda: FaceTransformer(process_every=process_every, play_audio=play_audio),
+            video_transformer_factory=lambda: FaceTransformer(play_audio=play_audio),
             media_stream_constraints={"video": True, "audio": False},
             async_transform=True,
         )
@@ -273,7 +265,7 @@ if st.session_state.running:
 
             cap = cv2.VideoCapture(tmp_path)
             fps = cap.get(cv2.CAP_PROP_FPS) or 20.0
-            transformer = FaceTransformer(process_every=process_every, play_audio=play_audio)
+            transformer = FaceTransformer(play_audio=play_audio)
 
             while st.session_state.running and cap.isOpened():
                 ret, frame = cap.read()
