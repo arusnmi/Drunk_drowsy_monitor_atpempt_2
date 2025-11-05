@@ -1,5 +1,5 @@
 # streamlit_app.py
-# Streamlit driver monitoring app using streamlit-webrtc for real live camera streaming
+# Streamlit driver monitoring app using streamlit-webrtc for live camera streaming only (no video upload, every frame processed)
 
 import streamlit as st
 import cv2
@@ -9,8 +9,6 @@ import time
 import threading
 import os
 import pygame
-from PIL import Image
-import tempfile
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 # ---------------------------
@@ -153,7 +151,6 @@ class FaceTransformer(VideoTransformerBase):
 
         now = time.time()
         unsafe = False
-        unsafe_reasons = []
 
         # Eyes closed
         if ear is not None and ear <= EAR_THRESHOLD:
@@ -167,7 +164,6 @@ class FaceTransformer(VideoTransformerBase):
                     if self.play_audio:
                         play_alarm_nonblocking()
                 unsafe = True
-                unsafe_reasons.append("Eyes closed")
         else:
             self.closed_start = None
 
@@ -180,7 +176,6 @@ class FaceTransformer(VideoTransformerBase):
                 if self.play_audio:
                     play_alarm_nonblocking()
             unsafe = True
-            unsafe_reasons.append("Yawning")
 
         # Head tilt
         if htr is not None and htr >= HTR_THRESHOLD:
@@ -191,7 +186,6 @@ class FaceTransformer(VideoTransformerBase):
                 if self.play_audio:
                     play_alarm_nonblocking()
             unsafe = True
-            unsafe_reasons.append("Head tilt")
 
         # Label classification
         state = classify_driver_state(ear, mar, htr)
@@ -213,12 +207,11 @@ class FaceTransformer(VideoTransformerBase):
 # STREAMLIT UI
 # ---------------------------
 st.set_page_config(page_title="Driver Monitor", layout="wide")
-st.title("🚗 Driver Monitoring — WebRTC Live + Upload Video")
+st.title("🚗 Driver Monitoring — Live Camera Only")
 
 col1, col2 = st.columns([2, 1])
 with col2:
     st.header("🎛 Controls")
-    source_option = st.radio("Source", ("WebRTC Live Camera", "Upload Video File"))
     play_audio = st.checkbox("Play server alarm (pygame)", value=False)
     start_btn = st.button("▶️ Start Monitoring")
     stop_btn = st.button("⏹ Stop")
@@ -234,46 +227,24 @@ if stop_btn:
     st.session_state.running = False
 
 # ---------------------------
-# MAIN LOOP
+# MAIN LOOP (WebRTC only)
 # ---------------------------
 if st.session_state.running:
-    if source_option == "WebRTC Live Camera":
-        ctx = webrtc_streamer(
-            key="driver-monitor",
-            video_transformer_factory=lambda: FaceTransformer(play_audio=play_audio),
-            media_stream_constraints={"video": True, "audio": False},
-            async_transform=True,
-        )
+    ctx = webrtc_streamer(
+        key="driver-monitor",
+        video_transformer_factory=lambda: FaceTransformer(play_audio=play_audio),
+        media_stream_constraints={"video": True, "audio": False},
+        async_transform=True,
+    )
 
-        if ctx and ctx.video_transformer:
-            transformer = ctx.video_transformer
-            st.sidebar.markdown("### Live Counters")
-            st.sidebar.text(f"Eyes Closed: {transformer.eyes_closed_events}")
-            st.sidebar.text(f"Yawns: {transformer.yawns}")
-            st.sidebar.text(f"Tilts: {transformer.tilts}")
-            st.sidebar.text(f"Alerts: {transformer.total_alerts}")
-        else:
-            st.info("Starting camera... please allow access in browser.")
-
+    if ctx and ctx.video_transformer:
+        transformer = ctx.video_transformer
+        st.sidebar.markdown("### Live Counters")
+        st.sidebar.text(f"Eyes Closed: {transformer.eyes_closed_events}")
+        st.sidebar.text(f"Yawns: {transformer.yawns}")
+        st.sidebar.text(f"Tilts: {transformer.tilts}")
+        st.sidebar.text(f"Alerts: {transformer.total_alerts}")
     else:
-        # Upload video fallback
-        video_file = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
-        if video_file is not None:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
-                tmp.write(video_file.read())
-                tmp_path = tmp.name
-
-            cap = cv2.VideoCapture(tmp_path)
-            fps = cap.get(cv2.CAP_PROP_FPS) or 20.0
-            transformer = FaceTransformer(play_audio=play_audio)
-
-            while st.session_state.running and cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                rgb_frame = transformer.transform(type("Frame", (), {"to_ndarray": lambda s, format="bgr24": frame}))
-                stframe.image(rgb_frame)
-                time.sleep(1.0 / fps)
-            cap.release()
+        st.info("Starting camera... please allow access in browser.")
 else:
     st.info("Press Start to begin monitoring (allow camera access).")
