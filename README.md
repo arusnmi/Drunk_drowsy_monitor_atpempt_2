@@ -21,7 +21,8 @@ Figures for catching drunk drivers:[https://www.thehindu.com/news/cities/Delhi/o
 1. Removal of non wanted inages: there were cropped eye images that interfered with the data given 
 2. Resizing the images: i resized the images to 227x227 to keep it uniform 
 3. Greyscaling images: making the images greyscaled to make detections better as greyscale
-4. Creating folders: created eyes, head tilt, and mouth folders to calcluate the tresholds. 
+4. Creating folders: created eyes, head tilt, and mouth folders to calcluate the tresholds.
+5. Splitting thr data: using the 70, 15 and 15 rule for splitting the data, 70% training, 15% test and valadation
 
 
 # Model: midiapipe
