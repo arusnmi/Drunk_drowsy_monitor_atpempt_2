@@ -175,25 +175,26 @@ class FaceTransformer(VideoTransformerBase):
         # ---------------------------
         # Eyes closed (drowsiness)
         # ---------------------------
+        # ---------------------------
+        # Eyes closed (drowsiness)
+        # ---------------------------
         if ear is not None and ear <= EAR_THRESHOLD:
-            unsafe = True  # turn red immediately like MAR logic
+            unsafe = True  # make screen red immediately
+            # Start timing closure if not already
             if self.closed_start is None:
                 self.closed_start = now
-            duration_closed = now - self.closed_start
+                self.eyes_closed_events += 1   # 🔢 increment once per closure event
+                self.total_alerts += 1
+                self.last_alert_time["eyes"] = now
+                play_alarm_nonblocking()       # 🔊 optional immediate sound
 
-            # Trigger alert only if eyes stay closed long enough
-            if duration_closed >= EYES_CLOSED_SECONDS:
-                if now - self.last_alert_time["eyes"] >= ALERT_COOLDOWN:
-                    self.eyes_closed_events += 1
-                    self.total_alerts += 1
-                    self.last_alert_time["eyes"] = now
-                    play_alarm_nonblocking()
         else:
-            # allow a small 0.5s grace before resetting timer (handles detection drops)
+            # allow 0.5s grace before resetting timer (to prevent flicker)
             if self.closed_start is not None and (now - self.closed_start) < 0.5:
                 pass
             else:
                 self.closed_start = None
+
 
 
 
