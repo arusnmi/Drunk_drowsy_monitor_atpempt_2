@@ -15,7 +15,7 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 # ---------------------------
 # SETTINGS / THRESHOLDS
 # ---------------------------
-EAR_THRESHOLD = 0.1       # Drowsiness (eye aspect ratio)
+EAR_THRESHOLD = 0.2       # Drowsiness (eye aspect ratio)
 MAR_THRESHOLD = 0.6       # Yawning
 HTR_THRESHOLD = 0.5       # Head tilt
 EYES_CLOSED_SECONDS = 3.0
