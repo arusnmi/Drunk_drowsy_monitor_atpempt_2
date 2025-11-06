@@ -1,4 +1,4 @@
-<img width="704" height="232" alt="image" src="https://github.com/user-attachments/assets/9f08533e-1676-445f-a6db-b30f67ef9397" /># Drunk and drowsy monitor 
+# Drunk and drowsy monitor 
 https://drunkdrowsymonitoratpempt2-cwsldbhukaqizpt8eghmjk.streamlit.app
 
 This Steramlit app detects drunk and drowsy driving. It wouldbe targeted against all drivers. The system would use the live webcam that would be placed on every car, and if the indacators that their eyes close, or they are yawning, it would detect drowsyness, and if they are not looking at the road, they are distracted, I used head tilt as a metric. 
@@ -28,7 +28,15 @@ Figures for catching drunk drivers:[https://www.thehindu.com/news/cities/Delhi/o
 # Model usage and training prameaters
 Mediapipe is a model that uses a mesh model for face detection, which is nesscary for EAR, MAR and head tilt ration. I used the in built Facemesh model that mediapipe uses, and to calcluate the EAR, MAR, and head tilt, Iwould take every training image, and calcluate the metrics, then i would save thise metrics in a csv file and then calcluate the avrage values to get each value. using the Facemesh model i use the points placed for eyes to calcluate the EAR, and the points for th mouth to calcluate MAR. Then i used the points of the left cheek and right cheek to mesure head tilt. i then based on the avrages , i fine tuened the numbers to calcluate the final resualts given th the metrics. i would use the steramlit interfacce to then mesure the values for EAR and MAR to fine tune them futher. 
 
-all the formulas are given in the folder "code calcluations"
+The formula for EAR is: 
+<img width="704" height="232" alt="image" src="https://github.com/user-attachments/assets/025cc96c-faf2-4fdc-9aeb-8704e167c4a3" />
+
+The formula for MAR is: 
+<img width="661" height="250" alt="image" src="https://github.com/user-attachments/assets/6a407154-4df1-4611-910b-71355241b461" />
+
+The formula for HTR is:
+<img width="518" height="188" alt="image" src="https://github.com/user-attachments/assets/e01ae8a1-c00d-454b-9292-3164a42aa5c5" />
+
 
 
 
