@@ -70,4 +70,4 @@ demo images are found in the folder called "Demo images"
 
 # Problems
 
-There are massive problems in my code where the memory opmization is not very good, so the cloud app does not work, for the future, i will try to memory optmize it. the code runs localy as myy coumputer has more ram than the free services of steramlt cloud
+There are problems when running the app on steramlit cloud as the code is not optmized, i know that there can be optmizitions. 
