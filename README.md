@@ -31,36 +31,7 @@ Mediapipe is a model that uses a mesh model for face detection, which is nesscar
 
 # Metirc and accruacy: 
 
-this is directly from the JSON file in the reposetroy: 
-{
-  "EAR_threshold": 0.2,
-  "EAR_metrics": {
-    "precision": 0.6666666666666666,
-    "recall": 0.7142857142857143,
-    "f1": 0.689655172413793,
-    "TP": 10,
-    "FP": 5,
-    "FN": 4
-  },
-  "MAR_threshold": 0.3,
-  "MAR_metrics": {
-    "precision": 0.4897959183673469,
-    "recall": 1.0,
-    "f1": 0.6575342465753424,
-    "TP": 24,
-    "FP": 25,
-    "FN": 0
-  },
-  "HTR_threshold": 0.5,
-  "HTR_metrics": {
-    "precision": 0.22448979591836735,
-    "recall": 1.0,
-    "f1": 0.36666666666666664,
-    "TP": 11,
-    "FP": 38,
-    "FN": 0
-  }
-}
+Based on the values in the JSON file given above, the metrics that are calcluated are 0.2 for the EAR, 0.6 for the MAR, and 0.5 for the Head tilt. the accruacy of these ratios are low, but they still work. 
 
 # Project demo images
  Demo images for showing the project working are found in the folder called "Demo images"
@@ -69,6 +40,10 @@ this is directly from the JSON file in the reposetroy:
 # Dataset:
 
 [https://drive.google.com/drive/folders/1lpSmeOI-rY1MU-9nPRYwP7CWWVDckKbL?usp=sharing](https://drive.google.com/drive/folders/1lpSmeOI-rY1MU-9nPRYwP7CWWVDckKbL?usp=sharing)
+
+# Memory optmization
+
+When i completed my code i found that it only worked on my laptop and not on the cloud because it was not memory efficant, so i did some emeory optmizition. my code not only calcluates every 2nd frame, so half of the frames are not going through which means that it is memory effeciant. i then removed fetures such as the upload a video function to solly use live webcam, i also used steramlit Webrtc to change the resoloution of the camera to allow for better memory optmization. 
 
 # Plans for the future
 
