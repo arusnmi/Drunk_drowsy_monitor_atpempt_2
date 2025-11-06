@@ -26,14 +26,14 @@ Figures for catching drunk drivers:[https://www.thehindu.com/news/cities/Delhi/o
 
 
 # Model usage and training prameaters
-Mediapipe is a model that uses a mesh model for face detection, which is nesscary for EAR, MAR and head tilt ration. I used the in built Facemesh model that mediapipe uses, and to calcluate the EAR, MAR, and head tilt, Iwould take every training image, and calcluate the metrics, then i would save thise metrics in a csv file and then calcluate the avrage values to get each value. using the Facemesh model i use the points placed for eyes to calcluate the EAR, and the points for th mouth to calcluate MAR. Then i used the points of the left cheek and right cheek to mesure head tilt 
+Mediapipe is a model that uses a mesh model for face detection, which is nesscary for EAR, MAR and head tilt ration. I used the in built Facemesh model that mediapipe uses, and to calcluate the EAR, MAR, and head tilt, Iwould take every training image, and calcluate the metrics, then i would save thise metrics in a csv file and then calcluate the avrage values to get each value. using the Facemesh model i use the points placed for eyes to calcluate the EAR, and the points for th mouth to calcluate MAR. Then i used the points of the left cheek and right cheek to mesure head tilt. i then based on the avrages , i fine tuened the numbers to calcluate the final resualts given th the metrics. i would use the steramlit interfacce to then mesure the values for EAR and MAR to fine tune them futher. 
 
 
 # Metirc and accruacy: 
 
 this is directly from the JSON file in the reposetroy: 
 {
-  "EAR_threshold": 0.28671591397985224,
+  "EAR_threshold": 0.2,
   "EAR_metrics": {
     "precision": 0.6666666666666666,
     "recall": 0.7142857142857143,
@@ -42,7 +42,7 @@ this is directly from the JSON file in the reposetroy:
     "FP": 5,
     "FN": 4
   },
-  "MAR_threshold": 0.0,
+  "MAR_threshold": 0.3,
   "MAR_metrics": {
     "precision": 0.4897959183673469,
     "recall": 1.0,
@@ -51,7 +51,7 @@ this is directly from the JSON file in the reposetroy:
     "FP": 25,
     "FN": 0
   },
-  "HTR_threshold": 0.0,
+  "HTR_threshold": 0.5,
   "HTR_metrics": {
     "precision": 0.22448979591836735,
     "recall": 1.0,
@@ -72,4 +72,5 @@ this is directly from the JSON file in the reposetroy:
 
 # Plans for the future
 
-If i get time later, i will try to optmize the code so that it runs smother 
+If i get time later, i will try to optmize the code so that it runs smother, i had chalenges in making it work on steramlit cloud, as the app was not optmized then. i would like toi add an alarm function to the app as well. the camera was also grainy as i was using steramlit webrtc, i plan to change that as well.
+
