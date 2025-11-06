@@ -169,11 +169,17 @@ class FaceTransformer(VideoTransformerBase):
         now = time.time()
         unsafe = False
 
+        # ---------------------------
         # Eyes closed (drowsiness)
+        # ---------------------------
         if ear is not None and ear <= EAR_THRESHOLD:
+            # mark that eyes are closed and track duration
             if self.closed_start is None:
                 self.closed_start = now
-            if now - self.closed_start >= EYES_CLOSED_SECONDS:
+
+            duration_closed = now - self.closed_start
+
+            if duration_closed >= EYES_CLOSED_SECONDS:
                 if now - self.last_alert_time["eyes"] >= ALERT_COOLDOWN:
                     self.eyes_closed_events += 1
                     self.total_alerts += 1
@@ -181,7 +187,12 @@ class FaceTransformer(VideoTransformerBase):
                     play_alarm_nonblocking()
                 unsafe = True
         else:
-            self.closed_start = None
+            # tolerate brief landmark losses (<0.5 sec)
+            if self.closed_start is not None and (now - self.closed_start) < 0.5:
+                pass  # don't reset yet
+            else:
+                self.closed_start = None
+
 
         # Yawning
         if mar is not None and mar >= MAR_THRESHOLD:
