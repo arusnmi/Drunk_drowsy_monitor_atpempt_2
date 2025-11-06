@@ -249,14 +249,42 @@ if st.session_state.running:
         async_transform=True,
     )
 
-    if ctx and ctx.video_transformer:
-        transformer = ctx.video_transformer
+    if ctx:
+        # Create persistent sidebar placeholders
         st.sidebar.markdown("### Live Counters")
-        st.sidebar.text(f"Eyes Closed: {transformer.eyes_closed_events}")
-        st.sidebar.text(f"Yawns: {transformer.yawns}")
-        st.sidebar.text(f"Tilts: {transformer.tilts}")
-        st.sidebar.text(f"Alerts: {transformer.total_alerts}")
-    else:
-        st.info("Starting camera... please allow access in browser.")
+        ph_eyes = st.sidebar.empty()
+        ph_yawns = st.sidebar.empty()
+        ph_tilts = st.sidebar.empty()
+        ph_alerts = st.sidebar.empty()
+
+        # Wait until the video transformer is ready
+        transformer = None
+        wait_start = time.time()
+        while st.session_state.running and ctx.video_transformer is None:
+            # short wait for transformer to be created by webrtc
+            time.sleep(0.05)
+            # prevent infinite wait (optional)
+            if time.time() - wait_start > 10:
+                break
+
+        transformer = ctx.video_transformer
+
+        if transformer is None:
+            st.info("Waiting for transformer... please allow camera access.")
+        else:
+            # Poll transformer counters and update UI placeholders until user stops
+            try:
+                while st.session_state.running and ctx.state.playing:
+                    # read attributes from transformer (thread-safe-ish for simple ints)
+                    ph_eyes.text(f"Eyes Closed: {getattr(transformer, 'eyes_closed_events', 0)}")
+                    ph_yawns.text(f"Yawns: {getattr(transformer, 'yawns', 0)}")
+                    ph_tilts.text(f"Tilts: {getattr(transformer, 'tilts', 0)}")
+                    ph_alerts.text(f"Alerts: {getattr(transformer, 'total_alerts', 0)}")
+                    # small sleep to avoid hogging the main thread / UI
+                    time.sleep(0.4)
+            except Exception:
+                # transformer disappeared or stream stopped
+                pass
+
 else:
     st.info("Press Start to begin monitoring (allow camera access).")
