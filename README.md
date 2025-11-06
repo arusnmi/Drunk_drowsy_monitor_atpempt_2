@@ -1,13 +1,13 @@
 # Drunk and drowsy monitor 
 
-This Steramlit app detects drunk and drowsy driving 
+This Steramlit app detects drunk and drowsy driving. It wouldbe targeted against all drivers. The system would use the live webcam that would be placed on every car, and if the indacators that their eyes close, or they are yawning, it would detect drowsyness, and if they are not looking at theroad, they are distracted. 
 
 # Overview of the problem:
 
-In india during 2022, there were more than 10,000 car crashes caused by drunk driving, and over 4000 were fatal crashes while the goverment only caught around over 28,000 drunk drivers(note, this number may be off as this is covering only pune, dehli, and benglerue). The current human system wher epolice officers would top a car and check the car with abrethlyzer is very inefficent. 
+In india during 2022, there were more than 10,000 car crashes caused by drunk driving, and over 4000 were fatal crashes while the goverment only caught around over 28,000 drunk drivers(note, this number may be off as this is covering only pune, dehli, and benglerue). The current human system wher epolice officers would top a car and check the car with abrethlyzer is very inefficent and misses a lot of drunk drivers. 
 
 
-Transcript from the lok shaba meeting in 2022 proving my point: [https://sansad.in/getFile/loksabhaquestions/annex/184/AU626_Fw1ML5.pdf?source=pqals](https://sansad.in/getFile/loksabhaquestions/annex/184/AU626_Fw1ML5.pdf?source=pqals)
+Transcript from the lok shaba discussion in 2022 proving my point: [https://sansad.in/getFile/loksabhaquestions/annex/184/AU626_Fw1ML5.pdf?source=pqals](https://sansad.in/getFile/loksabhaquestions/annex/184/AU626_Fw1ML5.pdf?source=pqals) 
 
 Figures for catching drunk drivers:[https://www.thehindu.com/news/cities/Delhi/over-12000-booked-for-drunken-driving-in-first-half-of-2024-27-increase-from-last-year-says-delhi-traffic-police/article68375250.ece#:~:text=According%20to%20a%20Hindu%20Bureau%20article%2C%20the,**Last%20year**%209%2C837%20violators%20booked%20for%20DUI](https://www.thehindu.com/news/cities/Delhi/over-12000-booked-for-drunken-driving-in-first-half-of-2024-27-increase-from-last-year-says-delhi-traffic-police/article68375250.ece#:~:text=According%20to%20a%20Hindu%20Bureau%20article%2C%20the,**Last%20year**%209%2C837%20violators%20booked%20for%20DUI)
 
