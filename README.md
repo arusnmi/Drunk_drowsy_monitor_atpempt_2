@@ -28,7 +28,7 @@ Figures for catching drunk drivers:[https://www.thehindu.com/news/cities/Delhi/o
 # Model usage and training prameaters
 Mediapipe is a model that uses a mesh model for face detection, which is nesscary for EAR, MAR and head tilt ration. I used the in built Facemesh model that mediapipe uses, and to calcluate the EAR, MAR, and head tilt, Iwould take every training image, and calcluate the metrics, then i would save thise metrics in a csv file and then calcluate the avrage values to get each value. using the Facemesh model i use the points placed for eyes to calcluate the EAR, and the points for th mouth to calcluate MAR. Then i used the points of the left cheek and right cheek to mesure head tilt. i then based on the avrages , i fine tuened the numbers to calcluate the final resualts given th the metrics. i would use the steramlit interfacce to then mesure the values for EAR and MAR to fine tune them futher. 
 
-to calcluate the ear i used this formula: <img width="704" height="232" alt="image" src="https://github.com/user-attachments/assets/9f1c8d71-fff0-46fd-be63-d128c9a00869" />
+all the formulas are given in the folder "code calcluations"
 
 
 
