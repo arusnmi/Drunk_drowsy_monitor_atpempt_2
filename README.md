@@ -1,6 +1,7 @@
 # Drunk and drowsy monitor 
+https://drunkdrowsymonitoratpempt2-cwsldbhukaqizpt8eghmjk.streamlit.app
 
-This Steramlit app detects drunk and drowsy driving. It wouldbe targeted against all drivers. The system would use the live webcam that would be placed on every car, and if the indacators that their eyes close, or they are yawning, it would detect drowsyness, and if they are not looking at theroad, they are distracted. 
+This Steramlit app detects drunk and drowsy driving. It wouldbe targeted against all drivers. The system would use the live webcam that would be placed on every car, and if the indacators that their eyes close, or they are yawning, it would detect drowsyness, and if they are not looking at the road, they are distracted, I used head tilt as a metric. 
 
 # Overview of the problem:
 
@@ -60,8 +61,8 @@ this is directly from the JSON file in the reposetroy:
   }
 }
 
-# Demo images
-demo images are found in the folder called "Demo images"
+# Project demo images
+ Demo images for showing the project working are found in the folder called "Demo images"
 
 
 # Dataset:
